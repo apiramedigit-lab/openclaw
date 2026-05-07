@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Infra Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#07090f; --s1:#0d1017; --s2:#131720; --s3:#1a2030;
+  --b1:#1e2535; --b2:#28304a;
+  --acc:#4f8ef7; --acc2:#7eb0ff;
+  --grn:#34d399; --amb:#fbbf24; --red:#f87171; --pur:#a78bfa;
+  --tx1:#e8edf5; --tx2:#8896b0; --tx3:#5a6a85;
+  --mono:'IBM Plex Mono',monospace; --sans:'DM Sans',sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--tx1);font-family:var(--sans);font-size:15px;min-height:100vh;display:flex;}
+
+/* ── SIDEBAR ── */
+.sidebar{width:240px;min-height:100vh;background:var(--s1);border-right:1px solid var(--b1);display:flex;flex-direction:column;position:fixed;left:0;top:0;bottom:0;z-index:200;overflow-y:auto;}
+.logo-wrap{padding:22px 18px 16px;border-bottom:1px solid var(--b1);}
+.logo-mark{display:flex;align-items:center;gap:10px;}
+.logo-hex{width:34px;height:34px;background:linear-gradient(135deg,#4f8ef7,#a78bfa);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:17px;}
+.logo-text{font-size:15px;font-weight:700;letter-spacing:.04em;}
+.logo-ver{font-size:11px;color:var(--tx3);font-family:var(--mono);margin-top:2px;}
+
+.nav-section{padding:12px 10px 6px;}
+.nav-label{font-size:11px;color:var(--tx3);font-family:var(--mono);letter-spacing:.08em;padding:0 10px;margin-bottom:6px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;font-size:14px;font-weight:500;color:var(--tx2);cursor:pointer;transition:all .14s;margin-bottom:2px;user-select:none;}
+.nav-item:hover{background:var(--s2);color:var(--tx1);}
+.nav-item.active{background:rgba(79,142,247,.13);color:var(--acc2);}
+.nav-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.dot-g{background:var(--grn);box-shadow:0 0 6px rgba(52,211,153,.5);}
+.dot-a{background:var(--amb);box-shadow:0 0 6px rgba(251,191,36,.4);}
+.dot-r{background:var(--red);}
+
+.nav-add-srv{margin:8px 10px 10px;background:rgba(79,142,247,.08);border:1px dashed rgba(79,142,247,.3);color:var(--acc2);border-radius:8px;padding:9px 12px;font-size:13px;font-weight:600;font-family:var(--sans);cursor:pointer;transition:all .14s;width:calc(100% - 20px);text-align:left;}
+.nav-add-srv:hover{background:rgba(79,142,247,.18);border-color:var(--acc);}
+
+/* ── MAIN ── */
+.main{margin-left:240px;flex:1;padding:26px 30px;min-height:100vh;}
+.topbar{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;}
+.page-title{font-size:24px;font-weight:700;}
+.page-sub{font-size:13px;color:var(--tx3);font-family:var(--mono);margin-top:4px;}
+.top-actions{display:flex;gap:10px;align-items:center;}
+.btn-primary{display:flex;align-items:center;gap:7px;background:var(--acc);color:#fff;border:none;border-radius:9px;padding:10px 18px;font-size:14px;font-weight:600;font-family:var(--sans);cursor:pointer;transition:all .14s;}
+.btn-primary:hover{background:var(--acc2);transform:translateY(-1px);}
+.btn-secondary{display:flex;align-items:center;gap:7px;background:var(--s2);color:var(--tx2);border:1px solid var(--b2);border-radius:9px;padding:10px 18px;font-size:14px;font-weight:600;font-family:var(--sans);cursor:pointer;transition:all .14s;}
+.btn-secondary:hover{background:var(--s3);color:var(--tx1);}
+
+/* ── STATS ── */
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:13px;margin-bottom:26px;}
+.stat{background:var(--s1);border:1px solid var(--b1);border-radius:12px;padding:16px 18px;position:relative;overflow:hidden;}
+.stat::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+.stat.c-blue::after{background:var(--acc);}
+.stat.c-green::after{background:var(--grn);}
+.stat.c-amber::after{background:var(--amb);}
+.stat.c-purple::after{background:var(--pur);}
+.stat.c-red::after{background:var(--red);}
+.stat-lbl{font-size:11px;color:var(--tx3);font-family:var(--mono);letter-spacing:.06em;margin-bottom:7px;}
+.stat-val{font-size:30px;font-weight:700;line-height:1;}
+.stat-sub{font-size:12px;color:var(--tx2);margin-top:4px;}
+
+/* ── SERVER BLOCK ── */
+.server-block{margin-bottom:28px;}
+.server-card{background:var(--s1);border:1px solid var(--b1);border-radius:14px;overflow:hidden;}
+
+.srv-head{display:flex;align-items:stretch;border-bottom:1px solid var(--b1);}
+.srv-head-left{flex:1;padding:18px 22px;background:var(--s2);display:flex;align-items:center;gap:15px;}
+.srv-icon{width:42px;height:42px;border-radius:10px;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.2);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.srv-meta-top{flex:1;}
+.srv-name{font-size:17px;font-weight:700;}
+.srv-ip-row{font-size:12px;color:var(--tx3);font-family:var(--mono);margin-top:2px;}
+.srv-purpose-row{display:flex;align-items:center;gap:7px;margin-top:6px;}
+.srv-purpose-label{font-size:12px;color:var(--tx3);}
+.srv-purpose-text{font-size:13px;color:var(--acc2);font-weight:500;}
+.edit-inline-btn{background:none;border:1px solid var(--b2);color:var(--tx3);cursor:pointer;font-size:12px;padding:2px 8px;border-radius:5px;line-height:1.4;transition:all .12s;font-family:var(--sans);}
+.edit-inline-btn:hover{color:var(--acc2);border-color:var(--acc);}
+
+.srv-specs-bar{display:flex;align-items:center;gap:20px;background:var(--s2);border-left:1px solid var(--b1);padding:0 22px;flex-shrink:0;}
+.srv-spec{text-align:center;}
+.srv-spec-val{font-size:15px;font-weight:700;font-family:var(--mono);}
+.srv-spec-key{font-size:11px;color:var(--tx3);letter-spacing:.05em;margin-top:2px;}
+.srv-status-wrap{border-left:1px solid var(--b1);padding-left:20px;display:flex;align-items:center;}
+.status-badge{font-size:12px;font-weight:700;font-family:var(--mono);padding:5px 13px;border-radius:20px;letter-spacing:.04em;}
+.badge-on{background:rgba(52,211,153,.1);color:var(--grn);border:1px solid rgba(52,211,153,.2);}
+.badge-deg{background:rgba(251,191,36,.1);color:var(--amb);border:1px solid rgba(251,191,36,.2);}
+.badge-off{background:rgba(248,113,113,.1);color:var(--red);border:1px solid rgba(248,113,113,.2);}
+
+/* ── VM TABLE ── */
+.vm-table{width:100%;border-collapse:collapse;}
+.vm-table th{font-size:11px;color:var(--tx3);font-family:var(--mono);letter-spacing:.07em;padding:10px 16px;text-align:left;border-bottom:1px solid var(--b1);background:rgba(0,0,0,.22);white-space:nowrap;}
+.vm-table td{padding:16px 16px;border-bottom:1px solid var(--b1);vertical-align:top;}
+.vm-table tr:last-child td{border-bottom:none;}
+.vm-table tr:hover td{background:rgba(255,255,255,.013);}
+
+.vm-name-cell{display:flex;align-items:flex-start;gap:11px;}
+.vm-os-icon{width:32px;height:32px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;margin-top:1px;}
+.os-u{background:rgba(228,81,8,.15);color:#e45108;border:1px solid rgba(228,81,8,.2);}
+.os-w{background:rgba(0,120,212,.15);color:#0078d4;border:1px solid rgba(0,120,212,.2);}
+.os-d{background:rgba(162,93,220,.15);color:#a25ddc;border:1px solid rgba(162,93,220,.2);}
+.vm-name{font-size:15px;font-weight:600;margin-bottom:3px;}
+.vm-os-lbl{font-size:12px;color:var(--tx3);font-family:var(--mono);}
+
+.chip-row{display:flex;flex-wrap:wrap;gap:6px;}
+.chip{font-size:12px;font-family:var(--mono);background:var(--s3);border:1px solid var(--b1);color:var(--tx2);padding:3px 9px;border-radius:5px;white-space:nowrap;}
+.chip b{color:var(--tx1);font-weight:600;}
+
+/* projects */
+.proj-list{display:flex;flex-direction:column;gap:6px;}
+.proj-row{display:flex;align-items:center;gap:8px;background:var(--s2);border:1px solid var(--b1);border-radius:8px;padding:9px 11px;}
+.proj-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.proj-name{font-size:13px;font-weight:600;color:var(--tx1);flex:0 0 auto;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.proj-port{font-family:var(--mono);font-size:12px;background:rgba(79,142,247,.1);color:var(--acc2);border:1px solid rgba(79,142,247,.18);padding:2px 8px;border-radius:4px;white-space:nowrap;flex-shrink:0;}
+.proj-path{font-family:var(--mono);font-size:11px;color:var(--tx3);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;}
+.proj-domain{font-family:var(--mono);font-size:11px;color:var(--pur);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:130px;}
+.proj-actions{display:flex;gap:4px;flex-shrink:0;margin-left:auto;}
+.icon-btn{background:none;border:none;color:var(--tx3);cursor:pointer;font-size:14px;padding:2px 4px;transition:color .12s;line-height:1;}
+.icon-btn:hover{color:var(--acc2);}
+.icon-btn.del:hover{color:var(--red);}
+.add-proj-btn{font-size:12px;font-family:var(--mono);color:var(--tx3);background:none;border:1px dashed var(--b2);border-radius:6px;padding:5px 12px;cursor:pointer;transition:all .12s;margin-top:4px;align-self:flex-start;}
+.add-proj-btn:hover{color:var(--acc2);border-color:var(--acc);}
+
+/* VM actions */
+.vm-status-row{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--tx2);margin-bottom:9px;}
+.vdot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.vd-run{background:var(--grn);box-shadow:0 0 6px rgba(52,211,153,.5);}
+.vd-stop{background:var(--tx3);}
+.vd-maint{background:var(--amb);}
+.vm-act-row{display:flex;gap:6px;}
+.bsm{font-size:12px;font-weight:600;font-family:var(--sans);padding:6px 13px;border-radius:6px;cursor:pointer;border:none;transition:all .12s;}
+.bsm-edit{background:rgba(79,142,247,.1);color:var(--acc2);border:1px solid rgba(79,142,247,.2);}
+.bsm-edit:hover{background:rgba(79,142,247,.22);}
+.bsm-del{background:rgba(248,113,113,.08);color:var(--red);border:1px solid rgba(248,113,113,.18);}
+.bsm-del:hover{background:rgba(248,113,113,.2);}
+.vm-cred{font-family:var(--mono);font-size:11px;color:var(--tx3);background:var(--s2);border:1px solid var(--b1);padding:3px 8px;border-radius:5px;margin-bottom:8px;display:inline-block;}
+
+.add-vm-bar{padding:11px 16px;border-top:1px solid var(--b1);background:rgba(0,0,0,.12);}
+.btn-add-vm{width:100%;background:none;border:1px dashed var(--b2);color:var(--tx3);border-radius:7px;padding:9px;font-size:13px;font-family:var(--sans);cursor:pointer;transition:all .12s;}
+.btn-add-vm:hover{border-color:var(--acc);color:var(--acc2);}
+.empty-td{text-align:center;font-size:13px;color:var(--tx3);font-family:var(--mono);padding:24px;}
+
+/* ── MODALS ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.78);backdrop-filter:blur(5px);z-index:1000;display:none;align-items:center;justify-content:center;}
+.overlay.open{display:flex;}
+.modal{background:var(--s1);border:1px solid var(--b2);border-radius:16px;width:680px;max-width:95vw;max-height:92vh;overflow-y:auto;padding:30px;position:relative;}
+.modal-sm{width:500px;}
+.modal-title{font-size:18px;font-weight:700;margin-bottom:4px;}
+.modal-sub{font-size:12px;color:var(--tx3);font-family:var(--mono);margin-bottom:22px;}
+.modal-close{position:absolute;top:16px;right:16px;background:var(--s2);border:1px solid var(--b1);color:var(--tx2);border-radius:7px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;}
+.modal-close:hover{color:var(--tx1);}
+
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px;}
+.form-full{grid-column:1/-1;}
+.fgroup{display:flex;flex-direction:column;gap:6px;}
+.flabel{font-size:11px;color:var(--tx3);font-family:var(--mono);letter-spacing:.06em;}
+.finput,.fselect{background:var(--s2);border:1px solid var(--b2);border-radius:8px;color:var(--tx1);font-family:var(--mono);font-size:14px;padding:10px 13px;outline:none;transition:border .13s;width:100%;}
+.finput:focus,.fselect:focus{border-color:var(--acc);}
+.fselect option{background:var(--s2);}
+.form-sep{height:1px;background:var(--b1);grid-column:1/-1;margin:4px 0;}
+.form-section-lbl{font-size:11px;color:var(--tx3);font-family:var(--mono);letter-spacing:.07em;grid-column:1/-1;margin-bottom:-4px;}
+
+/* project rows inside VM modal */
+.modal-proj-list{display:flex;flex-direction:column;gap:9px;grid-column:1/-1;}
+.modal-proj-row{background:var(--s2);border:1px solid var(--b1);border-radius:9px;padding:12px 14px;}
+.modal-proj-grid{display:grid;grid-template-columns:1fr 80px 1fr 28px;gap:9px;align-items:center;}
+.modal-proj-grid .finput{padding:8px 10px;font-size:13px;}
+.modal-proj-row2{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:8px;}
+.modal-proj-row2 .finput{padding:8px 10px;font-size:13px;}
+.mbtn-icon{background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.18);color:var(--red);border-radius:6px;width:28px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px;flex-shrink:0;}
+.mbtn-icon:hover{background:rgba(248,113,113,.22);}
+.btn-add-proj-modal{background:none;border:1px dashed var(--b2);color:var(--tx3);border-radius:7px;padding:7px 16px;font-size:12px;font-family:var(--mono);cursor:pointer;transition:all .12s;grid-column:1/-1;align-self:flex-start;margin-top:2px;}
+.btn-add-proj-modal:hover{border-color:var(--acc);color:var(--acc2);}
+
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:22px;}
+.btn-cancel{background:var(--s2);border:1px solid var(--b2);color:var(--tx2);border-radius:8px;padding:10px 18px;font-size:14px;font-weight:600;font-family:var(--sans);cursor:pointer;transition:all .13s;}
+.btn-cancel:hover{background:var(--b1);}
+.btn-save{background:var(--acc);border:none;color:#fff;border-radius:8px;padding:10px 22px;font-size:14px;font-weight:600;font-family:var(--sans);cursor:pointer;transition:all .13s;}
+.btn-save:hover{background:var(--acc2);}
+
+/* confirm */
+.confirm-body{text-align:center;padding:12px 0 6px;}
+.confirm-icon{font-size:36px;margin-bottom:12px;}
+.confirm-title{font-size:17px;font-weight:700;margin-bottom:7px;}
+.confirm-msg{font-size:14px;color:var(--tx2);margin-bottom:22px;}
+.confirm-actions{display:flex;gap:12px;justify-content:center;}
+.btn-del-confirm{background:var(--red);border:none;color:#fff;border-radius:8px;padding:10px 22px;font-size:14px;font-weight:600;font-family:var(--sans);cursor:pointer;}
+.btn-del-confirm:hover{opacity:.85;}
+
+/* toast */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--s2);border:1px solid rgba(52,211,153,.3);border-radius:11px;padding:11px 20px;font-size:14px;font-family:var(--mono);z-index:9999;transform:translateY(70px);opacity:0;transition:all .3s;color:var(--grn);}
+.toast.show{transform:translateY(0);opacity:1;}
+
+::-webkit-scrollbar{width:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--b2);border-radius:3px;}
+</style>
+</head>
+<body>
+
+<!-- ══ SIDEBAR ══ -->
+<div class="sidebar">
+  <div class="logo-wrap">
+    <div class="logo-mark">
+      <div class="logo-hex">⬡</div>
+      <div>
+        <div class="logo-text">INFRA PORTAL</div>
+        <div class="logo-ver">v2.1 · fully editable</div>
+      </div>
+    </div>
+  </div>
+  <div class="nav-section">
+    <div class="nav-label">VIEWS</div>
+    <div class="nav-item active" id="nav-all" onclick="showView('all')">▦ &nbsp;All Servers</div>
+  </div>
+  <div class="nav-section">
+    <div class="nav-label">SERVERS</div>
+    <div id="sidebar-servers"></div>
+    <button class="nav-add-srv" onclick="openAddSrvModal()">+ Add Server</button>
+  </div>
+</div>
+
+<!-- ══ MAIN ══ -->
+<div class="main">
+  <div class="topbar">
+    <div>
+      <div class="page-title" id="page-title">All Servers</div>
+      <div class="page-sub" id="page-sub">complete infrastructure — every field is editable</div>
+    </div>
+    <div class="top-actions">
+      <button class="btn-secondary" onclick="openAddSrvModal()">+ Add Server</button>
+      <button class="btn-primary" onclick="openAddVM()">+ Add VM</button>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat c-blue"><div class="stat-lbl">SERVERS</div><div class="stat-val" id="st-srvs">4</div><div class="stat-sub">All managed</div></div>
+    <div class="stat c-green"><div class="stat-lbl">TOTAL VMs</div><div class="stat-val" id="st-vms">0</div><div class="stat-sub" id="st-vms-s">0 running</div></div>
+    <div class="stat c-amber"><div class="stat-lbl">PROJECTS</div><div class="stat-val" id="st-proj">0</div><div class="stat-sub">Across all VMs</div></div>
+    <div class="stat c-purple"><div class="stat-lbl">OPEN PORTS</div><div class="stat-val" id="st-ports">0</div><div class="stat-sub">Total mapped</div></div>
+    <div class="stat c-red"><div class="stat-lbl">RUNNING</div><div class="stat-val" id="st-run">0</div><div class="stat-sub" id="st-run-s">0 stopped</div></div>
+  </div>
+
+  <div id="server-blocks"></div>
+</div>
+
+<!-- ══ ADD / EDIT SERVER MODAL ══ -->
+<div class="overlay" id="srv-overlay">
+<div class="modal modal-sm">
+  <button class="modal-close" onclick="closeSrvModal()">✕</button>
+  <div class="modal-title" id="srv-modal-title">Add New Server</div>
+  <div class="modal-sub" id="srv-modal-sub">Enter all server details below</div>
+  <div class="form-grid">
+    <div class="fgroup form-full"><label class="flabel">SERVER NAME</label><input class="finput" id="se-name" placeholder="e.g. Server E"></div>
+    <div class="fgroup"><label class="flabel">IP ADDRESS</label><input class="finput" id="se-ip" placeholder="e.g. 192.168.1.14"></div>
+    <div class="fgroup"><label class="flabel">HYPERVISOR</label><input class="finput" id="se-hyp" placeholder="e.g. Proxmox"></div>
+    <div class="fgroup"><label class="flabel">CPU</label><input class="finput" id="se-cpu" placeholder="e.g. 16 cores"></div>
+    <div class="fgroup"><label class="flabel">RAM</label><input class="finput" id="se-ram" placeholder="e.g. 64 GB"></div>
+    <div class="fgroup"><label class="flabel">DISK</label><input class="finput" id="se-disk" placeholder="e.g. 2 TB"></div>
+    <div class="fgroup form-full"><label class="flabel">SERVER STATUS</label>
+      <select class="fselect" id="se-status">
+        <option value="online">Online</option>
+        <option value="degraded">Degraded</option>
+        <option value="offline">Offline</option>
+      </select>
+    </div>
+    <div class="fgroup form-full"><label class="flabel">MAIN PURPOSE OF THIS SERVER</label><input class="finput" id="se-purpose" placeholder="e.g. Production API & Database servers"></div>
+    <div class="fgroup form-full"><label class="flabel">LOCATION / NOTES</label><input class="finput" id="se-notes" placeholder="e.g. Rack 3, DC-01, Frankfurt"></div>
+  </div>
+  <div class="modal-actions">
+    <button class="btn-cancel" onclick="closeSrvModal()">Cancel</button>
+    <button class="btn-save" onclick="saveSrv()">Save Server</button>
+  </div>
+</div>
+</div>
+
+<!-- ══ ADD / EDIT VM MODAL ══ -->
+<div class="overlay" id="vm-overlay">
+<div class="modal">
+  <button class="modal-close" onclick="closeVmModal()">✕</button>
+  <div class="modal-title" id="vm-modal-title">Add VM</div>
+  <div class="modal-sub" id="vm-modal-sub">Fill in all details — every field is editable later</div>
+  <div class="form-grid">
+
+    <div class="fgroup"><label class="flabel">VM NAME</label><input class="finput" id="f-name" placeholder="e.g. Ubuntu-101"></div>
+    <div class="fgroup"><label class="flabel">SERVER</label>
+      <select class="fselect" id="f-srv"></select>
+    </div>
+    <div class="fgroup"><label class="flabel">VM IP ADDRESS</label><input class="finput" id="f-ip" placeholder="e.g. 192.168.1.21"></div>
+    <div class="fgroup"><label class="flabel">OS TYPE</label>
+      <select class="fselect" id="f-os">
+        <option value="ubuntu">Ubuntu</option>
+        <option value="windows">Windows</option>
+        <option value="debian">Debian</option>
+        <option value="centos">CentOS</option>
+      </select>
+    </div>
+    <div class="fgroup"><label class="flabel">OS VERSION</label><input class="finput" id="f-osver" placeholder="e.g. 22.04 LTS"></div>
+    <div class="fgroup"><label class="flabel">VM STATUS</label>
+      <select class="fselect" id="f-status">
+        <option value="running">Running</option>
+        <option value="stopped">Stopped</option>
+        <option value="maintenance">Maintenance</option>
+      </select>
+    </div>
+
+    <div class="form-sep"></div>
+    <div class="form-section-lbl">VM HARDWARE SPECIFICATIONS</div>
+
+    <div class="fgroup"><label class="flabel">CPU CORES</label><input class="finput" id="f-cpu" placeholder="e.g. 4"></div>
+    <div class="fgroup"><label class="flabel">RAM</label><input class="finput" id="f-ram" placeholder="e.g. 8 GB"></div>
+    <div class="fgroup"><label class="flabel">DISK SIZE</label><input class="finput" id="f-disk" placeholder="e.g. 100 GB"></div>
+    <div class="fgroup"><label class="flabel">SSH / RDP PORT</label><input class="finput" id="f-ssh" placeholder="e.g. 22"></div>
+
+    <div class="form-sep"></div>
+    <div class="form-section-lbl">ACCESS CREDENTIALS</div>
+
+    <div class="fgroup"><label class="flabel">USERNAME</label><input class="finput" id="f-user" placeholder="e.g. root"></div>
+    <div class="fgroup"><label class="flabel">PASSWORD</label><input class="finput" id="f-pass" type="password" placeholder="••••••••"></div>
+
+    <div class="form-sep"></div>
+    <div class="form-section-lbl">PROJECTS RUNNING ON THIS VM</div>
+
+    <div class="modal-proj-list" id="modal-proj-list"></div>
+    <button class="btn-add-proj-modal" onclick="addModalProjRow()">+ Add project</button>
+
+    <div class="form-sep"></div>
+    <div class="fgroup form-full"><label class="flabel">NOTES</label><input class="finput" id="f-notes" placeholder="Any extra info..."></div>
+  </div>
+  <div class="modal-actions">
+    <button class="btn-cancel" onclick="closeVmModal()">Cancel</button>
+    <button class="btn-save" onclick="saveVM()">Save VM</button>
+  </div>
+</div>
+</div>
+
+<!-- ══ PROJECT EDIT MODAL ══ -->
+<div class="overlay" id="proj-overlay">
+<div class="modal modal-sm">
+  <button class="modal-close" onclick="closeProjModal()">✕</button>
+  <div class="modal-title" id="proj-modal-title">Edit Project</div>
+  <div class="modal-sub">Update project details for this VM</div>
+  <div class="form-grid">
+    <div class="fgroup form-full"><label class="flabel">PROJECT NAME</label><input class="finput" id="pe-name" placeholder="e.g. Helium API"></div>
+    <div class="fgroup"><label class="flabel">PORT NUMBER</label><input class="finput" id="pe-port" placeholder="e.g. 5001"></div>
+    <div class="fgroup"><label class="flabel">PROJECT STATUS</label>
+      <select class="fselect" id="pe-status">
+        <option value="running">Running</option>
+        <option value="stopped">Stopped</option>
+        <option value="maintenance">Maintenance</option>
+      </select>
+    </div>
+    <div class="fgroup form-full"><label class="flabel">FILE / PROJECT PATH</label><input class="finput" id="pe-path" placeholder="e.g. /home/digit-web/helium"></div>
+    <div class="fgroup form-full"><label class="flabel">DOMAIN / URL</label><input class="finput" id="pe-domain" placeholder="e.g. helium.severdigitweb.uk"></div>
+    <div class="fgroup form-full"><label class="flabel">DESCRIPTION</label><input class="finput" id="pe-desc" placeholder="What does this project do?"></div>
+  </div>
+  <div class="modal-actions">
+    <button class="btn-cancel" onclick="closeProjModal()">Cancel</button>
+    <button class="btn-save" onclick="saveProj()">Save Project</button>
+  </div>
+</div>
+</div>
+
+<!-- ══ CONFIRM MODAL ══ -->
+<div class="overlay" id="confirm-overlay">
+<div class="modal modal-sm">
+  <button class="modal-close" onclick="closeConfirm()">✕</button>
+  <div class="confirm-body">
+    <div class="confirm-icon">⚠️</div>
+    <div class="confirm-title" id="confirm-title">Confirm Delete</div>
+    <div class="confirm-msg" id="confirm-msg">This cannot be undone.</div>
+    <div class="confirm-actions">
+      <button class="btn-cancel" onclick="closeConfirm()">Cancel</button>
+      <button class="btn-del-confirm" onclick="doConfirm()">Delete</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="toast" id="toast">✓ Saved</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// CONFIG — FastAPI backend address
+// உன் machine-ல் FastAPI run ஆகுது: python main.py
+// ═══════════════════════════════════════════════════════════
+// CONFIG — FastAPI backend address
+const API_URL = '';
+
+
+// ═══════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════
+let servers = [];
+let vms = [];
+let editingVmId=null, editingSrvId=null, editingProjKey=null;
+let confirmCb=null, currentView='all';
+let modalProjs=[];
+
+// ═══════════════════════════════════════════════════════════
+// API HELPER — எல்லா DB calls இங்கே
+// ═══════════════════════════════════════════════════════════
+async function apiFetch(path, options={}) {
+  try {
+    const res = await fetch(API_URL + path, {
+      headers: {'Content-Type':'application/json', ...options.headers},
+      ...options,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(()=>({detail: res.statusText}));
+      throw new Error(err.detail || 'API Error');
+    }
+    if (res.status === 204) return null;
+    return await res.json();
+  } catch(e) {
+    throw e;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// LOAD DATA FROM DB
+// ═══════════════════════════════════════════════════════════
+async function loadAllData() {
+  try {
+    const [dbServers, dbVms, dbProjects] = await Promise.all([
+      apiFetch('/servers'),
+      apiFetch('/vms'),
+      apiFetch('/projects'),
+    ]);
+
+    servers = dbServers.map(s => ({
+      id:      s.id,
+      name:    s.name,
+      ip:      s.ip_address,
+      hyp:     s.proxmox_node || 'Proxmox',
+      purpose: s.purpose || '—',
+      cpu:     s.cpu_cores ? s.cpu_cores + ' cores' : '—',
+      ram:     s.ram_gb    ? s.ram_gb + ' GB'        : '—',
+      disk:    s.disk_tb   ? s.disk_tb + ' TB'       : '—',
+      status:  s.status,
+      notes:   s.notes || '',
+    }));
+
+    vms = dbVms.map(v => ({
+      id:      v.id,
+      srv:     v.server_id,
+      name:    v.name,
+      ip:      v.ip_address,
+      os:      v.os,
+      osver:   v.os_version || '',
+      cpu:     v.cpu  || '—',
+      ram:     v.ram  || '—',
+      disk:    v.disk || '—',
+      ssh:     v.ssh_port || '22',
+      user:    v.ssh_user || '',
+      pass:    v.ssh_password || '',
+      status:  v.status,
+      notes:   v.notes || '',
+      projects: dbProjects
+        .filter(p => p.vm_id === v.id)
+        .map(p => ({
+          id:     p.id,
+          name:   p.name,
+          port:   p.port   || '',
+          path:   p.path   || '',
+          domain: p.domain || '',
+          status: p.status,
+          desc:   p.description || '',
+        })),
+    }));
+
+    renderAll();
+    toast('✓ DB loaded', 'var(--grn)');
+  } catch(e) {
+    toast('⚠ DB Error: ' + e.message, 'var(--red)');
+    console.error('DB load failed:', e);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════
+const osClass = o=>({ubuntu:'os-u',windows:'os-w',debian:'os-d',centos:'os-d'}[o]||'os-u');
+const osLbl   = o=>({ubuntu:'Ubuntu',windows:'Windows',debian:'Debian',centos:'CentOS'}[o]||o);
+const dotCls  = s=>({running:'vd-run',stopped:'vd-stop',maintenance:'vd-maint'}[s]||'vd-stop');
+const badgeCls= s=>({online:'badge-on',degraded:'badge-deg',offline:'badge-off'}[s]||'badge-on');
+const projDot = s=>({running:'var(--grn)',stopped:'var(--tx3)',maintenance:'var(--amb)'}[s]||'var(--tx3)');
+const cap     = s=>s.charAt(0).toUpperCase()+s.slice(1);
+
+// ═══════════════════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════════════════
+function renderAll(){
+  renderSidebar();
+  const c=document.getElementById('server-blocks');
+  c.innerHTML=servers.map(buildServer).join('');
+  updateStats();
+  applyView();
+}
+
+function renderSidebar(){
+  const el=document.getElementById('sidebar-servers');
+  el.innerHTML=servers.map(s=>{
+    const dotC=s.status==='online'?'dot-g':s.status==='degraded'?'dot-a':'dot-r';
+    return `<div class="nav-item" id="nav-${s.id}" onclick="showView(${s.id})"><span class="nav-dot ${dotC}"></span>${s.name}</div>`;
+  }).join('');
+  document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
+  const active=document.getElementById('nav-'+currentView)||document.getElementById('nav-all');
+  if(active) active.classList.add('active');
+}
+
+function buildServer(srv){
+  const srvVms=vms.filter(v=>v.srv===srv.id);
+  return `
+  <div class="server-block" id="block-${srv.id}">
+  <div class="server-card">
+    <div class="srv-head">
+      <div class="srv-head-left">
+        <div class="srv-icon">🖥</div>
+        <div class="srv-meta-top">
+          <div class="srv-name">${srv.name}</div>
+          <div class="srv-ip-row">${srv.ip} &nbsp;·&nbsp; ${srv.hyp}${srv.notes?' &nbsp;·&nbsp; '+srv.notes:''}</div>
+          <div class="srv-purpose-row">
+            <span class="srv-purpose-label">Purpose:</span>
+            <span class="srv-purpose-text">${srv.purpose||'—'}</span>
+            <button class="edit-inline-btn" onclick="openEditSrvModal(${srv.id})">✎ edit server</button>
+            <button class="edit-inline-btn" style="color:var(--red);border-color:rgba(248,113,113,.3)" onclick="askDeleteSrv(${srv.id})">✕ delete</button>
+          </div>
+        </div>
+      </div>
+      <div class="srv-specs-bar">
+        <div class="srv-spec"><div class="srv-spec-val">${srv.cpu}</div><div class="srv-spec-key">CPU</div></div>
+        <div class="srv-spec"><div class="srv-spec-val">${srv.ram}</div><div class="srv-spec-key">RAM</div></div>
+        <div class="srv-spec"><div class="srv-spec-val">${srv.disk}</div><div class="srv-spec-key">DISK</div></div>
+        <div class="srv-status-wrap"><span class="status-badge ${badgeCls(srv.status)}">${srv.status.toUpperCase()}</span></div>
+      </div>
+    </div>
+    <table class="vm-table">
+      <thead><tr>
+        <th>VM NAME &amp; OS</th><th>IP &amp; SPECS</th><th>ACCESS</th>
+        <th>PROJECTS  —  name · port · path</th><th>STATUS &amp; ACTIONS</th>
+      </tr></thead>
+      <tbody>
+        ${srvVms.length
+          ? srvVms.map(buildVmRow).join('')
+          : `<tr><td colspan="5"><div class="empty-td">No VMs on ${srv.name} yet — add one below</div></td></tr>`}
+      </tbody>
+    </table>
+    <div class="add-vm-bar">
+      <button class="btn-add-vm" onclick="openAddVM(${srv.id})">+ Add VM to ${srv.name}</button>
+    </div>
+  </div>
+  </div>`;
+}
+
+function buildVmRow(vm){
+  const projRows = vm.projects.length
+    ? vm.projects.map(p=>`
+      <div class="proj-row">
+        <span class="proj-dot" style="background:${projDot(p.status)}"></span>
+        <span class="proj-name" title="${p.name}">${p.name}</span>
+        <span class="proj-port">:${p.port}</span>
+        <span class="proj-path" title="${p.path}">${p.path}</span>
+        ${p.domain?`<span class="proj-domain" title="${p.domain}">🌐 ${p.domain}</span>`:''}
+        <div class="proj-actions">
+          <button class="icon-btn" onclick="openProjModal(${vm.id},${p.id})" title="Edit project">✎</button>
+          <button class="icon-btn del" onclick="askDeleteProj(${vm.id},${p.id})" title="Delete project">✕</button>
+        </div>
+      </div>`).join('')
+    : '<div style="font-size:13px;color:var(--tx3);font-family:var(--mono);">No projects yet</div>';
+
+  return `<tr>
+    <td>
+      <div class="vm-name-cell">
+        <div class="vm-os-icon ${osClass(vm.os)}">${vm.os==='windows'?'W':'U'}</div>
+        <div><div class="vm-name">${vm.name}</div><div class="vm-os-lbl">${osLbl(vm.os)} ${vm.osver}</div></div>
+      </div>
+    </td>
+    <td>
+      <div class="chip-row">
+        <span class="chip"><b>${vm.ip}</b></span>
+        <span class="chip">CPU <b>${vm.cpu}c</b></span>
+        <span class="chip">RAM <b>${vm.ram}</b></span>
+        <span class="chip">Disk <b>${vm.disk}</b></span>
+      </div>
+    </td>
+    <td>
+      <div class="chip-row" style="margin-bottom:7px">
+        <span class="chip"><b>${vm.os==='windows'?'RDP':'SSH'}</b> :${vm.ssh}</span>
+      </div>
+      <div class="vm-cred">${vm.user} / ••••</div>
+    </td>
+    <td>
+      <div class="proj-list">
+        ${projRows}
+        <button class="add-proj-btn" onclick="openAddProj(${vm.id})">+ add project</button>
+      </div>
+    </td>
+    <td>
+      <div class="vm-status-row"><span class="vdot ${dotCls(vm.status)}"></span>${cap(vm.status)}</div>
+      ${vm.notes?`<div style="font-size:12px;color:var(--tx3);margin-bottom:8px">${vm.notes}</div>`:''}
+      <div class="vm-act-row">
+        <button class="bsm bsm-edit" onclick="openEditVM(${vm.id})">Edit VM</button>
+        <button class="bsm bsm-del" onclick="askDeleteVM(${vm.id})">Delete</button>
+      </div>
+    </td>
+  </tr>`;
+}
+
+function updateStats(){
+  const run =vms.filter(v=>v.status==='running').length;
+  const stop=vms.filter(v=>v.status==='stopped').length;
+  const allP=vms.flatMap(v=>v.projects);
+  document.getElementById('st-srvs').textContent=servers.length;
+  document.getElementById('st-vms').textContent=vms.length;
+  document.getElementById('st-vms-s').textContent=run+' running';
+  document.getElementById('st-proj').textContent=allP.length;
+  document.getElementById('st-ports').textContent=allP.filter(p=>p.port).length;
+  document.getElementById('st-run').textContent=run;
+  document.getElementById('st-run-s').textContent=stop+' stopped';
+}
+
+// ═══════════════════════════════════════════════════════════
+// VIEW
+// ═══════════════════════════════════════════════════════════
+function showView(v){
+  currentView=v;
+  document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
+  const active=document.getElementById('nav-'+v)||document.getElementById('nav-all');
+  if(active) active.classList.add('active');
+  applyView();
+  const srv=servers.find(s=>s.id===v);
+  document.getElementById('page-title').textContent=srv?srv.name:'All Servers';
+  document.getElementById('page-sub').textContent=srv
+    ?`${srv.ip} · ${srv.hyp} — ${srv.purpose}`
+    :'complete infrastructure — every field is editable';
+}
+
+function applyView(){
+  servers.forEach(s=>{
+    const el=document.getElementById('block-'+s.id);
+    if(el) el.style.display=(currentView==='all'||currentView===s.id)?'block':'none';
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// SERVER MODAL
+// ═══════════════════════════════════════════════════════════
+function openAddSrvModal(){
+  editingSrvId=null;
+  document.getElementById('srv-modal-title').textContent='Add New Server';
+  document.getElementById('srv-modal-sub').textContent='Enter all server details below';
+  ['se-name','se-ip','se-hyp','se-cpu','se-ram','se-disk','se-purpose','se-notes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('se-status').value='online';
+  document.getElementById('srv-overlay').classList.add('open');
+}
+
+function openEditSrvModal(srvId){
+  editingSrvId=srvId;
+  const s=servers.find(x=>x.id===srvId);
+  document.getElementById('srv-modal-title').textContent='Edit Server — '+s.name;
+  document.getElementById('srv-modal-sub').textContent='Update any server detail below';
+  document.getElementById('se-name').value=s.name;
+  document.getElementById('se-ip').value=s.ip;
+  document.getElementById('se-hyp').value=s.hyp;
+  document.getElementById('se-cpu').value=parseInt(s.cpu)||'';
+  document.getElementById('se-ram').value=parseInt(s.ram)||'';
+  document.getElementById('se-disk').value=parseFloat(s.disk)||'';
+  document.getElementById('se-status').value=s.status;
+  document.getElementById('se-purpose').value=s.purpose;
+  document.getElementById('se-notes').value=s.notes;
+  document.getElementById('srv-overlay').classList.add('open');
+}
+
+async function saveSrv(){
+  const name=document.getElementById('se-name').value.trim();
+  const ip=document.getElementById('se-ip').value.trim();
+  if(!name||!ip){toast('⚠ Server name and IP required','var(--amb)');return;}
+  const payload={
+    name,
+    ip_address:  ip,
+    purpose:     document.getElementById('se-purpose').value.trim(),
+    cpu_cores:   parseInt(document.getElementById('se-cpu').value)||0,
+    ram_gb:      parseInt(document.getElementById('se-ram').value)||0,
+    disk_tb:     parseFloat(document.getElementById('se-disk').value)||0,
+    status:      document.getElementById('se-status').value,
+    proxmox_node:document.getElementById('se-hyp').value.trim()||null,
+    notes:       document.getElementById('se-notes').value.trim(),
+  };
+  try {
+    if(editingSrvId){
+      await apiFetch(`/servers/${editingSrvId}`,{method:'PUT',body:JSON.stringify(payload)});
+      toast('✓ Server updated');
+    } else {
+      await apiFetch('/servers',{method:'POST',body:JSON.stringify(payload)});
+      toast('✓ Server added');
+    }
+    closeSrvModal(); await loadAllData();
+  } catch(e){ toast('⚠ '+e.message,'var(--red)'); }
+}
+
+function askDeleteSrv(srvId){
+  const s=servers.find(x=>x.id===srvId);
+  const vmCount=vms.filter(v=>v.srv===srvId).length;
+  confirmAction(`Delete "${s.name}"?`,
+    `This will also delete all ${vmCount} VM(s). Cannot be undone.`,
+    async ()=>{
+      try{
+        await apiFetch(`/servers/${srvId}`,{method:'DELETE'});
+        if(currentView===srvId) currentView='all';
+        toast('✓ Server deleted'); await loadAllData();
+      } catch(e){ toast('⚠ '+e.message,'var(--red)'); }
+    });
+}
+
+function closeSrvModal(){document.getElementById('srv-overlay').classList.remove('open');}
+
+// ═══════════════════════════════════════════════════════════
+// VM MODAL
+// ═══════════════════════════════════════════════════════════
+function populateSrvSelect(selectedId){
+  const sel=document.getElementById('f-srv');
+  sel.innerHTML=servers.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+  if(selectedId) sel.value=selectedId;
+}
+
+function openAddVM(srvId){
+  editingVmId=null;
+  document.getElementById('vm-modal-title').textContent='Add New VM';
+  document.getElementById('vm-modal-sub').textContent='Fill in all VM details';
+  clearVmForm();
+  populateSrvSelect(srvId||null);
+  modalProjs=[];
+  renderModalProjs();
+  document.getElementById('vm-overlay').classList.add('open');
+}
+
+function openEditVM(vmId){
+  editingVmId=vmId;
+  const vm=vms.find(v=>v.id===vmId);
+  document.getElementById('vm-modal-title').textContent='Edit VM — '+vm.name;
+  document.getElementById('vm-modal-sub').textContent='Update any field and save';
+  populateSrvSelect(vm.srv);
+  document.getElementById('f-name').value=vm.name;
+  document.getElementById('f-ip').value=vm.ip;
+  document.getElementById('f-os').value=vm.os;
+  document.getElementById('f-osver').value=vm.osver;
+  document.getElementById('f-status').value=vm.status;
+  document.getElementById('f-cpu').value=vm.cpu;
+  document.getElementById('f-ram').value=vm.ram;
+  document.getElementById('f-disk').value=vm.disk;
+  document.getElementById('f-ssh').value=vm.ssh;
+  document.getElementById('f-user').value=vm.user;
+  document.getElementById('f-pass').value=vm.pass;
+  document.getElementById('f-notes').value=vm.notes;
+  modalProjs=vm.projects.map(p=>({...p}));
+  renderModalProjs();
+  document.getElementById('vm-overlay').classList.add('open');
+}
+
+function clearVmForm(){
+  ['f-name','f-ip','f-osver','f-cpu','f-ram','f-disk','f-ssh','f-user','f-pass','f-notes']
+    .forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f-os').value='ubuntu';
+  document.getElementById('f-status').value='running';
+}
+
+function renderModalProjs(){
+  const list=document.getElementById('modal-proj-list');
+  list.innerHTML=modalProjs.map((p,i)=>`
+    <div class="modal-proj-row">
+      <div class="modal-proj-grid">
+        <input class="finput" placeholder="Project name" value="${esc(p.name)}" oninput="modalProjs[${i}].name=this.value">
+        <input class="finput" placeholder="Port" value="${esc(p.port)}" oninput="modalProjs[${i}].port=this.value">
+        <input class="finput" placeholder="File path  e.g. /home/..." value="${esc(p.path)}" oninput="modalProjs[${i}].path=this.value">
+        <button class="mbtn-icon" onclick="removeModalProj(${i})">✕</button>
+      </div>
+      <div class="modal-proj-row2">
+        <input class="finput" placeholder="Domain / URL (optional)" value="${esc(p.domain)}" oninput="modalProjs[${i}].domain=this.value">
+        <input class="finput" placeholder="Short description" value="${esc(p.desc)}" oninput="modalProjs[${i}].desc=this.value">
+      </div>
+    </div>`).join('');
+}
+
+function esc(s){return (s||'').replace(/"/g,'&quot;');}
+
+function addModalProjRow(){
+  modalProjs.push({name:'',port:'',path:'',domain:'',status:'running',desc:''});
+  renderModalProjs();
+}
+
+function removeModalProj(i){
+  modalProjs.splice(i,1);
+  renderModalProjs();
+}
+
+async function saveVM(){
+  const name=document.getElementById('f-name').value.trim();
+  const ip  =document.getElementById('f-ip').value.trim();
+  if(!name||!ip){toast('⚠ VM Name and IP required','var(--amb)');return;}
+  const srvId=parseInt(document.getElementById('f-srv').value);
+  const vmPayload={
+    server_id:    srvId,
+    name,
+    ip_address:   ip,
+    os:           document.getElementById('f-os').value,
+    os_version:   document.getElementById('f-osver').value.trim()||'',
+    status:       document.getElementById('f-status').value,
+    cpu:          document.getElementById('f-cpu').value.trim()||'—',
+    ram:          document.getElementById('f-ram').value.trim()||'—',
+    disk:         document.getElementById('f-disk').value.trim()||'—',
+    ssh_port:     document.getElementById('f-ssh').value.trim()||'22',
+    ssh_user:     document.getElementById('f-user').value.trim(),
+    ssh_password: document.getElementById('f-pass').value,
+    notes:        document.getElementById('f-notes').value.trim(),
+  };
+  try {
+    let savedVmId;
+    if(editingVmId){
+      await apiFetch(`/vms/${editingVmId}`,{method:'PUT',body:JSON.stringify(vmPayload)});
+      savedVmId=editingVmId;
+      // delete old projects then re-create
+      const existingVm=vms.find(v=>v.id===editingVmId);
+      for(const p of existingVm.projects){
+        await apiFetch(`/projects/${p.id}`,{method:'DELETE'});
+      }
+      toast('✓ VM updated');
+    } else {
+      const newVm=await apiFetch('/vms',{method:'POST',body:JSON.stringify(vmPayload)});
+      savedVmId=newVm.id;
+      toast('✓ VM added');
+    }
+    for(const p of modalProjs.filter(p=>p.name.trim())){
+      await apiFetch('/projects',{method:'POST',body:JSON.stringify({
+        vm_id:       savedVmId,
+        name:        p.name,
+        port:        p.port||null,
+        path:        p.path||null,
+        domain:      p.domain||null,
+        status:      p.status||'running',
+        description: p.desc||null,
+      })});
+    }
+    closeVmModal(); await loadAllData();
+  } catch(e){ toast('⚠ '+e.message,'var(--red)'); }
+}
+
+function askDeleteVM(vmId){
+  const vm=vms.find(v=>v.id===vmId);
+  confirmAction(`Delete "${vm.name}"?`,
+    `This removes the VM and all ${vm.projects.length} project(s). Cannot be undone.`,
+    async ()=>{
+      try{
+        await apiFetch(`/vms/${vmId}`,{method:'DELETE'});
+        toast('✓ VM deleted'); await loadAllData();
+      } catch(e){ toast('⚠ '+e.message,'var(--red)'); }
+    });
+}
+
+function closeVmModal(){document.getElementById('vm-overlay').classList.remove('open');}
+
+// ═══════════════════════════════════════════════════════════
+// PROJECT MODAL
+// ═══════════════════════════════════════════════════════════
+function openProjModal(vmId,projId){
+  editingProjKey={vmId,projId};
+  const vm=vms.find(v=>v.id===vmId);
+  const p=vm.projects.find(x=>x.id===projId);
+  document.getElementById('proj-modal-title').textContent='Edit — '+p.name;
+  document.getElementById('pe-name').value=p.name;
+  document.getElementById('pe-port').value=p.port;
+  document.getElementById('pe-status').value=p.status;
+  document.getElementById('pe-path').value=p.path;
+  document.getElementById('pe-domain').value=p.domain;
+  document.getElementById('pe-desc').value=p.desc;
+  document.getElementById('proj-overlay').classList.add('open');
+}
+
+function openAddProj(vmId){
+  editingProjKey={vmId,projId:null};
+  document.getElementById('proj-modal-title').textContent='Add Project';
+  ['pe-name','pe-port','pe-path','pe-domain','pe-desc'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('pe-status').value='running';
+  document.getElementById('proj-overlay').classList.add('open');
+}
+
+async function saveProj(){
+  const {vmId,projId}=editingProjKey;
+  const name=document.getElementById('pe-name').value.trim();
+  if(!name){toast('⚠ Project name required','var(--amb)');return;}
+  const payload={
+    vm_id:       vmId,
+    name,
+    port:        document.getElementById('pe-port').value.trim()||null,
+    status:      document.getElementById('pe-status').value,
+    path:        document.getElementById('pe-path').value.trim()||null,
+    domain:      document.getElementById('pe-domain').value.trim()||null,
+    description: document.getElementById('pe-desc').value.trim()||null,
+  };
+  try {
+    if(projId){
+      await apiFetch(`/projects/${projId}`,{method:'PUT',body:JSON.stringify(payload)});
+      toast('✓ Project updated');
+    } else {
+      await apiFetch('/projects',{method:'POST',body:JSON.stringify(payload)});
+      toast('✓ Project added');
+    }
+    closeProjModal(); await loadAllData();
+  } catch(e){ toast('⚠ '+e.message,'var(--red)'); }
+}
+
+function askDeleteProj(vmId,projId){
+  const vm=vms.find(v=>v.id===vmId);
+  const p=vm.projects.find(x=>x.id===projId);
+  confirmAction(`Delete "${p.name}"?`,'This will remove this project from the VM.',
+    async ()=>{
+      try{
+        await apiFetch(`/projects/${projId}`,{method:'DELETE'});
+        toast('✓ Project deleted'); await loadAllData();
+      } catch(e){ toast('⚠ '+e.message,'var(--red)'); }
+    });
+}
+
+function closeProjModal(){document.getElementById('proj-overlay').classList.remove('open');}
+
+// ═══════════════════════════════════════════════════════════
+// CONFIRM + TOAST
+// ═══════════════════════════════════════════════════════════
+function confirmAction(title,msg,cb){
+  confirmCb=cb;
+  document.getElementById('confirm-title').textContent=title;
+  document.getElementById('confirm-msg').textContent=msg;
+  document.getElementById('confirm-overlay').classList.add('open');
+}
+function doConfirm(){closeConfirm();if(confirmCb)confirmCb();}
+function closeConfirm(){document.getElementById('confirm-overlay').classList.remove('open');}
+
+function toast(msg,color){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.style.color=color||'var(--grn)';
+  t.style.borderColor=color?color:'rgba(52,211,153,.3)';
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+['vm-overlay','srv-overlay','proj-overlay','confirm-overlay'].forEach(id=>{
+  document.getElementById(id).addEventListener('click',function(e){
+    if(e.target===this)this.classList.remove('open');
+  });
+});
+
+// ═══════════════════════════════════════════════════════════
+// INIT — Page load-ல DB-லிருந்து data load
+// ═══════════════════════════════════════════════════════════
+loadAllData();
+</script>
