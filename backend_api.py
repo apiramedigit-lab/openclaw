@@ -25,15 +25,17 @@ def get_database_config():
     database_url = os.getenv('DATABASE_URL')
     
     if database_url:
-        # Parse Supabase/Render DATABASE_URL
-        url = urlparse(database_url)
-        return {
-            'host': url.hostname,
-            'database': url.path[1:],  # Remove leading '/'
-            'user': url.username,
-            'password': url.password,
-            'port': url.port or 5432
-        }
+        # Use connection string directly - handles special chars in password
+        import re
+        match = re.match(r'postgresql://([^:]+):(.+)@([^:]+):(\d+)/(.+)', database_url)
+        if match:
+            return {
+                'host': match.group(3),
+                'database': match.group(5).split('?')[0],
+                'user': match.group(1),
+                'password': match.group(2),
+                'port': int(match.group(4))
+            }
     else:
         # Fallback to individual env vars (local development)
         return {
