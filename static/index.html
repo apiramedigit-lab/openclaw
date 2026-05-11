@@ -258,6 +258,10 @@ body{background:var(--bg);color:var(--tx1);font-family:var(--sans);font-size:15p
     <div class="fgroup"><label class="flabel">CPU</label><input class="finput" id="se-cpu" placeholder="e.g. 16 cores"></div>
     <div class="fgroup"><label class="flabel">RAM</label><input class="finput" id="se-ram" placeholder="e.g. 64 GB"></div>
     <div class="fgroup"><label class="flabel">DISK</label><input class="finput" id="se-disk" placeholder="e.g. 2 TB"></div>
+    <div class="fgroup"><label class="flabel">GPU MODEL</label><input class="finput" id="se-gpu-model" placeholder="e.g. NVIDIA RTX 5090"></div>
+    <div class="fgroup"><label class="flabel">GPU COUNT</label><input class="finput" type="number" id="se-gpu-count" placeholder="e.g. 1"></div>
+    <div class="fgroup"><label class="flabel">GPU MEMORY</label><input class="finput" id="se-gpu-memory" placeholder="e.g. 32GB"></div>
+    <div class="fgroup form-full"><label class="flabel">GPU NOTES</label><textarea class="finput" id="se-gpu-notes" rows="2" placeholder="e.g. Dedicated for AI/ML workloads"></textarea></div>
     <div class="fgroup form-full"><label class="flabel">SERVER STATUS</label>
       <select class="fselect" id="se-status">
         <option value="online">Online</option>
@@ -651,7 +655,7 @@ function openAddSrvModal(){
   editingSrvId=null;
   document.getElementById('srv-modal-title').textContent='Add New Server';
   document.getElementById('srv-modal-sub').textContent='Enter all server details below';
-  ['se-name','se-ip','se-hyp','se-cpu','se-ram','se-disk','se-purpose','se-notes'].forEach(id=>document.getElementById(id).value='');
+  ['se-name','se-ip','se-hyp','se-cpu','se-ram','se-disk','se-gpu-model','se-gpu-count','se-gpu-memory','se-gpu-notes','se-purpose','se-notes'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('se-status').value='online';
   document.getElementById('srv-overlay').classList.add('open');
 }
@@ -670,6 +674,10 @@ function openEditSrvModal(srvId){
   document.getElementById('se-status').value=s.status;
   document.getElementById('se-purpose').value=s.purpose;
   document.getElementById('se-notes').value=s.notes;
+  document.getElementById('se-gpu-model').value=s.gpu_model||'';
+  document.getElementById('se-gpu-count').value=s.gpu_count||'';
+  document.getElementById('se-gpu-memory').value=s.gpu_memory||'';
+  document.getElementById('se-gpu-notes').value=s.gpu_notes||'';
   document.getElementById('srv-overlay').classList.add('open');
 }
 
@@ -687,6 +695,10 @@ async function saveSrv(){
     status:      document.getElementById('se-status').value,
     proxmox_node:document.getElementById('se-hyp').value.trim()||null,
     notes:       document.getElementById('se-notes').value.trim(),
+    gpu_model:   document.getElementById('se-gpu-model').value.trim()||null,
+    gpu_count:   parseInt(document.getElementById('se-gpu-count').value)||null,
+    gpu_memory:  document.getElementById('se-gpu-memory').value.trim()||null,
+    gpu_notes:   document.getElementById('se-gpu-notes').value.trim()||null,
   };
   try {
     if(editingSrvId){
