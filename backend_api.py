@@ -223,7 +223,7 @@ app.add_middleware(CORSManualMiddleware)
 @app.get("/")
 async def read_index():
     """Serves the frontend dashboard"""
-    return FileResponse('index.html') 
+    return FileResponse('static/index.html') 
 
 # Optional: If you have CSS/JS files in a folder named 'static'
 # app.mount("/static", StaticFiles(directory="static"), name="static")
