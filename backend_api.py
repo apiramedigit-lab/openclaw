@@ -13,6 +13,7 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 from contextlib import contextmanager
 import os
+import re
 from datetime import datetime
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
@@ -21,18 +22,36 @@ from starlette.requests import Request
 # DATABASE CONNECTION
 # ═══════════════════════════════════════════════════════════
 
-DATABASE_CONFIG = {
-    'host': os.getenv('DB_HOST', 'localhost'),
-    'database': os.getenv('DB_NAME', 'openclaw_db'),
-    'user': os.getenv('DB_USER', 'postgres'),
-    'password': os.getenv('DB_PASSWORD', 'password'),
-    'port': os.getenv('DB_PORT', '5432')
-}
+def get_database_config():
+    """Parse DATABASE_URL or use individual env vars"""
+    database_url = os.getenv('DATABASE_URL')
+    
+    if database_url:
+        match = re.match(r'postgresql://([^:]+):([^@]+)@([^:]+):(\d+)/(.+)', database_url)
+        if match:
+            user, password, host, port, database = match.groups()
+            return {
+                'host': host,
+                'database': database.split('?')[0],
+                'user': user,
+                'password': password,
+                'port': int(port),
+                'sslmode': 'require'
+            }
+    
+    return {
+        'host': os.getenv('DB_HOST', 'localhost'),
+        'database': os.getenv('DB_NAME', 'postgres'),
+        'user': os.getenv('DB_USER', 'postgres'),
+        'password': os.getenv('DB_PASSWORD', 'password'),
+        'port': int(os.getenv('DB_PORT', '5432'))
+    }
 
 @contextmanager
 def get_db_connection():
     """Database connection context manager"""
-    conn = psycopg2.connect(**DATABASE_CONFIG)
+    config = get_database_config()
+    conn = psycopg2.connect(**config)
     try:
         yield conn
         conn.commit()
