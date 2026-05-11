@@ -5,48 +5,29 @@ Connects PostgreSQL database with frontend portal
 
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from typing import List, Optional
+from fastapi.responses import FileResponse  # Add this
+from fastapi.staticfiles import StaticFiles # Add this
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from contextlib import contextmanager
 import os
 from datetime import datetime
-from urllib.parse import urlparse
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
 
 # ═══════════════════════════════════════════════════════════
 # DATABASE CONNECTION
 # ═══════════════════════════════════════════════════════════
 
-def get_database_config():
-    """Parse DATABASE_URL or use individual env vars"""
-    database_url = os.getenv('DATABASE_URL')
-    
-    if database_url:
-        # Use connection string directly - handles special chars in password
-        import re
-        match = re.match(r'postgresql://([^:]+):(.+)@([^:]+):(\d+)/(.+)', database_url)
-        if match:
-            return {
-                'host': match.group(3),
-                'database': match.group(5).split('?')[0],
-                'user': match.group(1),
-                'password': match.group(2),
-                'port': int(match.group(4))
-            }
-    else:
-        # Fallback to individual env vars (local development)
-        return {
-            'host': os.getenv('DB_HOST', 'localhost'),
-            'database': os.getenv('DB_NAME', 'openclaw_db'),
-            'user': os.getenv('DB_USER', 'postgres'),
-            'password': os.getenv('DB_PASSWORD', 'password'),
-            'port': os.getenv('DB_PORT', '5432')
-        }
-
-DATABASE_CONFIG = get_database_config()
+DATABASE_CONFIG = {
+    'host': os.getenv('DB_HOST', 'localhost'),
+    'database': os.getenv('DB_NAME', 'openclaw_db'),
+    'user': os.getenv('DB_USER', 'postgres'),
+    'password': os.getenv('DB_PASSWORD', 'password'),
+    'port': os.getenv('DB_PORT', '5432')
+}
 
 @contextmanager
 def get_db_connection():
@@ -77,6 +58,10 @@ class ServerBase(BaseModel):
     proxmox_node: Optional[str] = None
     proxmox_username: Optional[str] = None
     proxmox_password: Optional[str] = None
+    gpu_model: Optional[str] = None        # ← ADD THIS
+    gpu_count: Optional[int] = None        # ← ADD THIS
+    gpu_memory: Optional[str] = None       # ← ADD THIS
+    gpu_notes: Optional[str] = None        # ← ADD THIS
     notes: Optional[str] = None
 
 class ServerCreate(ServerBase):
@@ -94,6 +79,10 @@ class ServerUpdate(BaseModel):
     proxmox_node: Optional[str] = None
     proxmox_username: Optional[str] = None
     proxmox_password: Optional[str] = None
+    gpu_model: Optional[str] = None        # ← ADD THIS
+    gpu_count: Optional[int] = None        # ← ADD THIS
+    gpu_memory: Optional[str] = None       # ← ADD THIS
+    gpu_notes: Optional[str] = None        # ← ADD THIS
     notes: Optional[str] = None
 
 class Server(ServerBase):
@@ -189,41 +178,36 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# CORS middleware - allow frontend to access API
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # In production, specify your frontend domain
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+class CORSManualMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        if request.method == "OPTIONS":
+            from starlette.responses import Response
+            response = Response()
+            response.headers["Access-Control-Allow-Origin"] = "*"
+            response.headers["Access-Control-Allow-Methods"] = "*"
+            response.headers["Access-Control-Allow-Headers"] = "*"
+            return response
+        response = await call_next(request)
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Methods"] = "*"
+        response.headers["Access-Control-Allow-Headers"] = "*"
+        return response
 
-# ═══════════════════════════════════════════════════════════
-# SERVE FRONTEND (Static Files)
-# ═══════════════════════════════════════════════════════════
-
-# Mount static directory if it exists
-if os.path.exists("static"):
-    app.mount("/static", StaticFiles(directory="static"), name="static")
-
-# Serve frontend at root path
-@app.get("/", include_in_schema=False)
-async def serve_frontend():
-    """Serve the main frontend HTML file"""
-    if os.path.exists("static/index.html"):
-        return FileResponse('static/index.html')
-    else:
-        return {"message": "Frontend not found. API is running at /docs"}
+app.add_middleware(CORSManualMiddleware)
 
 
 # ═══════════════════════════════════════════════════════════
 # SERVER ENDPOINTS
 # ═══════════════════════════════════════════════════════════
 
-@app.get("/api/health")
-def health_check():
-    """Health check endpoint"""
-    return {"status": "ok", "message": "Server Management Portal API"}
+# Replace the old health check root with this:
+@app.get("/")
+async def read_index():
+    """Serves the frontend dashboard"""
+    return FileResponse('index.html') 
+
+# Optional: If you have CSS/JS files in a folder named 'static'
+# app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
 @app.get("/servers", response_model=List[dict])
@@ -256,14 +240,16 @@ def create_server(server: ServerCreate):
             cursor.execute("""
                 INSERT INTO servers (name, ip_address, purpose, cpu_cores, ram_gb, disk_tb, 
                                     status, proxmox_api_url, proxmox_node, proxmox_username, 
-                                    proxmox_password, notes)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                                    proxmox_password, gpu_model, gpu_count, gpu_memory, 
+                                    gpu_notes, notes)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING *
             """, (
                 server.name, server.ip_address, server.purpose, server.cpu_cores,
                 server.ram_gb, server.disk_tb, server.status, server.proxmox_api_url,
                 server.proxmox_node, server.proxmox_username, server.proxmox_password,
-                server.notes
+                server.gpu_model, server.gpu_count, server.gpu_memory, 
+                server.gpu_notes, server.notes
             ))
             new_server = cursor.fetchone()
             return new_server
@@ -521,14 +507,30 @@ def get_stats():
             cursor.execute("SELECT COUNT(*) as count FROM servers WHERE status = 'online'")
             online_servers = cursor.fetchone()['count']
             
+            # GPU stats - ADD THESE
+            cursor.execute("""
+                SELECT COUNT(*) as count 
+                FROM servers 
+                WHERE gpu_model IS NOT NULL AND gpu_model != ''
+            """)
+            servers_with_gpu = cursor.fetchone()['count']
+            
+            cursor.execute("""
+                SELECT COALESCE(SUM(gpu_count), 0) as total
+                FROM servers
+                WHERE gpu_count IS NOT NULL
+            """)
+            total_gpus = cursor.fetchone()['total']
+            
             return {
                 "total_servers": total_servers,
                 "total_vms": total_vms,
                 "running_vms": running_vms,
                 "total_projects": total_projects,
-                "online_servers": online_servers
+                "online_servers": online_servers,
+                "servers_with_gpu": servers_with_gpu,    # ← ADD THIS
+                "total_gpus": total_gpus                  # ← ADD THIS
             }
-
 
 if __name__ == "__main__":
     import uvicorn
