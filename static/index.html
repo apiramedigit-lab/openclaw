@@ -444,6 +444,10 @@ async function loadAllData() {
       disk:    s.disk_tb   ? s.disk_tb + ' TB'       : '—',
       status:  s.status,
       notes:   s.notes || '',
+      gpu_model:  s.gpu_model || null,
+      gpu_count:  s.gpu_count || null,
+      gpu_memory: s.gpu_memory || null,
+      gpu_notes:  s.gpu_notes || null,
     }));
 
     vms = dbVms.map(v => ({
